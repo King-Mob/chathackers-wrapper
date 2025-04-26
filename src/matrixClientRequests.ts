@@ -67,3 +67,32 @@ export const redactEvent = async (
     }
   );
 };
+
+export const createRoom = async (name: string, recipients: string[]): Promise<string> => {
+  const response = await fetch(`${homeserver}/_matrix/client/v3/createRoom`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${access_token}`
+    },
+    body: JSON.stringify({
+      preset: "trusted_private_chat",
+      invite: recipients,
+      is_direct: true,
+      initial_state: [
+        {
+          type: "m.room.name",
+          content: {
+            name: name
+          }
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create room: ${response.statusText}`);
+  }
+
+  return (await response.json())?.room_id;
+};

@@ -1,10 +1,25 @@
 import "dotenv/config";
 import * as sdk from "matrix-js-sdk";
 import { RoomEvent, ClientEvent } from "matrix-js-sdk";
-import handleMessage from "./messages";
-import handleReaction from "./reactions";
+import { env } from "process";
+import * as fs from "fs";
+import * as path from "path";
+// Import the handler registry
+import { getHandlers, getHandlersForType } from "./handlers";
 
-const { homeserver, access_token, userId, whatsAppRoomId } = process.env;
+// Dynamically import all handlers from the handlers directory
+const handlersDir = path.join(__dirname, 'handlers');
+if (fs.existsSync(handlersDir)) {
+  fs.readdirSync(handlersDir)
+    .filter(file => file.endsWith('.ts') || file.endsWith('.js'))
+    .forEach(file => {
+      // This will execute the handler files, which will register themselves
+      require(path.join(handlersDir, file));
+      console.log(`Loaded handler: ${file}`);
+    });
+}
+
+const { homeserver, access_token, userId, whatsAppRoomId } = env;
 
 const client = sdk.createClient({
   baseUrl: homeserver,
@@ -39,19 +54,19 @@ const start = async () => {
         return; // don't activate unless in the active room
       }
 
-      if (
-        event.getType() !== "m.room.message" &&
-        event.getType() !== "m.reaction"
-      ) {
-        console.log("skipping event:", event);
-        return; // only use messages or reactions
+      // Get the appropriate handler for this event type
+      const handlers = getHandlersForType(event.event.type);
+      if (handlers) {
+        console.log(`Found ${handlers.length} handlers for event type ${event.event.type}`);
+        for (const handler of handlers) {
+          console.log(handler.type);
+          await handler.handle(event);
+        }
       }
-
-      if (event.getType() === "m.room.message") handleMessage(event);
-
-      if (event.getType() === "m.reaction") handleReaction(event);
     }
   );
 };
 
-start();
+start().catch(err => {
+  console.error("Error starting client:", err);
+});
