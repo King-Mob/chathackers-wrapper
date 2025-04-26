@@ -21,7 +21,7 @@ export interface Tool {
 };
 
 // Create a registry for handlers
-const tools: Tool[] = [];
+export const tools: Tool[] = [];
 const handlers: EventHandler[] = [];
 
 /**

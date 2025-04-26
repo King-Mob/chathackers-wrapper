@@ -1,4 +1,27 @@
-const { access_token, homeserver } = process.env;
+import * as sdk from "matrix-js-sdk";
+import { ClientEvent, Preset } from "matrix-js-sdk";
+const { access_token, homeserver, userId } = process.env;
+
+// Create a Matrix client instance
+export const client = sdk.createClient({
+  baseUrl: homeserver,
+  accessToken: access_token,
+  userId,
+});
+
+// Initialize the client (call this once at startup)
+export const initClient = async () => {
+  await client.startClient();
+
+  return new Promise<void>((resolve) => {
+    client.once(ClientEvent.Sync, (state, prevState, res) => {
+      console.log(state);
+      if (state === 'PREPARED') {
+        resolve();
+      }
+    });
+  });
+};
 
 export const sendEvent = (roomId: string, content: any, type: string) => {
   return fetch(`${homeserver}/_matrix/client/v3/rooms/${roomId}/send/${type}`, {
@@ -76,7 +99,7 @@ export const createRoom = async (name: string, recipients: string[]): Promise<st
       'Authorization': `Bearer ${access_token}`
     },
     body: JSON.stringify({
-      preset: "trusted_private_chat",
+      preset: Preset.TrustedPrivateChat,
       invite: recipients,
       is_direct: true,
       initial_state: [
@@ -94,5 +117,35 @@ export const createRoom = async (name: string, recipients: string[]): Promise<st
     throw new Error(`Failed to create room: ${response.statusText}`);
   }
 
-  return (await response.json())?.room_id;
+  //return (await response.json())?.room_id;
+  return "room_id"; // TODO: fixup
 };
+
+export async function findDirectMessageRoom(userId: string): Promise<string | null> {
+  // Get all rooms the bot is in
+  const rooms = client.getRooms();
+  console.log("Rooms: ", rooms);
+  
+  // Find a direct message room with this user
+  for (const room of rooms) {
+    // Check if this is a direct message room
+    const isDM = true; //const isDM = room.getMembers().length === 2;
+    
+    if (isDM && room.getMember(userId)) {
+      return room.roomId;
+    }
+  }
+  
+  // If no existing DM room found, create one
+  try {
+    const dmRoom = await client.createRoom({
+      preset: Preset.TrustedPrivateChat,
+      invite: [userId],
+      is_direct: true
+    });
+    return dmRoom.room_id;
+  } catch (error) {
+    console.error("Error creating DM room:", error);
+    return null;
+  }
+}
