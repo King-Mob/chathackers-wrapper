@@ -38,6 +38,12 @@ export async function getActiveModulesForRoomId(roomId: string) {
     return activeModules;
 }
 
-// insert a new active module, (moduleId, roomId, userId)
+export async function insertActiveModule(moduleId, roomId, userId) {
+    const insertActiveModule = `INSERT INTO ModuleActivations VALUES ('${moduleId}', '${roomId}', 'TRUE', '${userId}');`;
+    await connection.run(insertActiveModule);
+}
 
-// update module activation (moduleId, roomId, active)
+export async function updateModuleActivation(moduleId, roomId, active) {
+    const updateModuleActivation = `UPDATE ModuleActivations SET active=${active ? 'TRUE' : 'FALSE'} WHERE module_id='${moduleId}' AND room_id='${roomId}';`;
+    await connection.run(updateModuleActivation);
+}
