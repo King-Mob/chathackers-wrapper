@@ -25,6 +25,8 @@ async function handleWrapperEvent(event: MatrixEvent) {
     console.log("wrapper event", event)
     // if gear react, list the modules and descriptions
     // which can be a loop through the modules array
+    // but we also need to know which have already been installed
+    // so also do a call to get the active modules from duckdb
 
     // if it's a heart, turn a module on
     // which is a duckdb call
