@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { getEvent, getSync, joinRoom, sendMessage } from "./matrixClientRequests";
 import { MatrixEvent } from "./types";
+import { startDuckDB, getActiveModulesForRoomId } from "./duckdb";
 
 const { userId } = process.env;
 
@@ -20,35 +21,51 @@ async function forwardEvent(module, event) {
     })
 }
 
-async function handleEvent(event: MatrixEvent) {
-    modules.forEach(async (module) => {
-        // first check if the module is active for this room id, which will come
-        // from duckdb call
-        if (module.event_types.includes(event.type)) {
-            console.log(event)
-            const forwardResponse = await forwardEvent(module, event);
-            const forwardResult: any = await forwardResponse.json();
-            console.log(forwardResult);
-            if (forwardResult.response) {
-                if (forwardResult.response.message) {
-                    sendMessage(event.room_id, forwardResult.response.message, {
-                        moduleEvent: true,
-                        wrapperEvent: false,
-                        ...forwardResult.response.context
-                    });
-                }
-                else {
-                    forwardResult.response.forEach(response => {
-                        sendMessage(event.room_id, response.message, {
+async function handleWrapperEvent(event: MatrixEvent) {
+    console.log("wrapper event", event)
+    // if gear react, list the modules and descriptions
+    // which can be a loop through the modules array
+
+    // if it's a heart, turn a module on
+    // which is a duckdb call
+    // and a message saying we just turned a module on
+
+    // if it's a prayer, turn a module off
+    // also a duckdb call
+    // and a message saying module is off
+}
+
+async function handleModuleEvent(event: MatrixEvent) {
+    const activeModuleIds = await getActiveModulesForRoomId(event.room_id);
+
+    modules
+        .filter(module => activeModuleIds.includes(module.id))
+        .forEach(async (module) => {
+            if (module.event_types.includes(event.type)) {
+                console.log(event)
+                const forwardResponse = await forwardEvent(module, event);
+                const forwardResult: any = await forwardResponse.json();
+                console.log(forwardResult);
+                if (forwardResult.response) {
+                    if (forwardResult.response.message) {
+                        sendMessage(event.room_id, forwardResult.response.message, {
                             moduleEvent: true,
                             wrapperEvent: false,
-                            ...response.context
+                            ...forwardResult.response.context
+                        });
+                    }
+                    else {
+                        forwardResult.response.forEach(response => {
+                            sendMessage(event.room_id, response.message, {
+                                moduleEvent: true,
+                                wrapperEvent: false,
+                                ...response.context
+                            })
                         })
-                    })
+                    }
                 }
             }
-        }
-    })
+        })
 }
 
 async function loadModules() {
@@ -89,7 +106,12 @@ async function sync(batch = null) {
                         const prevEvent = await getEvent(roomId, prevEventId);
                         event.prevEvent = prevEvent;
                     }
-                    handleEvent(event);
+
+                    if (event.prevEvent && event.prevEvent.content.context.wrapperEvent)
+                        handleWrapperEvent(event);
+                    else
+                        handleModuleEvent(event);
+
                     handledEventIds.push(event.event_id);
                 }
             })
@@ -100,6 +122,7 @@ async function sync(batch = null) {
 }
 
 const start = async () => {
+    await startDuckDB()
     // load modules
     await loadModules();
     // start listening for events

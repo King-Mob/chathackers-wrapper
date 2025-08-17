@@ -12,6 +12,8 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Runtime data
 registrations/*
+chathackers_duckdb.db
+chathackers_duckdb.db.wal
 pids
 *.pid
 *.seed
