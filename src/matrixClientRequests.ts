@@ -1,27 +1,15 @@
-import * as sdk from "matrix-js-sdk";
-import { ClientEvent, Preset } from "matrix-js-sdk";
-const { access_token, homeserver, userId } = process.env;
+const { access_token, homeserver } = process.env;
 
-// Create a Matrix client instance
-export const client = sdk.createClient({
-  baseUrl: homeserver,
-  accessToken: access_token,
-  userId,
-});
+export const getSync = async (batch: string | null) => {
+  const syncResponse = await fetch(`${homeserver}/_matrix/client/v3/sync?timeout=30000${batch ? `&since=${batch}` : ""}`, {
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+    },
+  })
+  const syncResult = await syncResponse.json();
 
-// Initialize the client (call this once at startup)
-export const initClient = async () => {
-  await client.startClient();
-
-  return new Promise<void>((resolve) => {
-    client.once(ClientEvent.Sync, (state, prevState, res) => {
-      console.log(state);
-      if (state === 'PREPARED') {
-        resolve();
-      }
-    });
-  });
-};
+  return syncResult;
+}
 
 export const sendEvent = (roomId: string, content: any, type: string) => {
   return fetch(`${homeserver}/_matrix/client/v3/rooms/${roomId}/send/${type}`, {
@@ -91,36 +79,19 @@ export const redactEvent = async (
   );
 };
 
-export const createRoom = async (name: string, recipients: string[]): Promise<string> => {
-  const response = await fetch(`${homeserver}/_matrix/client/v3/createRoom`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${access_token}`
-    },
-    body: JSON.stringify({
-      preset: Preset.TrustedPrivateChat,
-      invite: recipients,
-      is_direct: true,
-      initial_state: [
-        {
-          type: "m.room.name",
-          content: {
-            name: name
-          }
-        }
-      ]
-    })
-  });
+export const joinRoom = async (roomId: string) => {
+  return fetch(
+    `${homeserver}/_matrix/client/v3/rooms/${roomId}/join`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    }
+  );
+}
 
-  if (!response.ok) {
-    throw new Error(`Failed to create room: ${response.statusText}`);
-  }
-
-  //return (await response.json())?.room_id;
-  return "room_id"; // TODO: fixup
-};
-
+/*
 export async function findDirectMessageRoom(userId: string): Promise<string | null> {
   // Get all rooms the bot is in
   const rooms = client.getRooms();
@@ -148,4 +119,4 @@ export async function findDirectMessageRoom(userId: string): Promise<string | nu
     console.error("Error creating DM room:", error);
     return null;
   }
-}
+}*/
