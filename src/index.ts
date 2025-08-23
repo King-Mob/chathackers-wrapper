@@ -1,15 +1,15 @@
 import "dotenv/config";
 import * as fs from "fs";
 import * as path from "path";
-import { getEvent, getSync, joinRoom, sendMessage } from "./matrixClientRequests";
-import { MatrixEvent } from "./types";
-import { startDuckDB, getActiveModulesForRoomId } from "./duckdb";
+import { getEvent, getSync, joinRoom, sendMessage, sendEvent } from "./matrixClientRequests";
+import { MatrixEvent, ChatModule } from "./types";
+import { startDuckDB, getActiveModulesForRoomId, insertActiveModule, updateModuleActivation } from "./duckdb";
 
 const { userId } = process.env;
 
 const scriptStart = Date.now();
-const handledEventIds = [];
-const modules = [];
+const handledEventIds: string[] = [];
+const modules: ChatModule[] = [];
 
 async function forwardEvent(module, event) {
     return fetch(module.url, {
@@ -23,31 +23,91 @@ async function forwardEvent(module, event) {
 
 async function handleWrapperEvent(event: MatrixEvent) {
     console.log("wrapper event", event)
-    // if gear react, list the modules and descriptions
-    // which can be a loop through the modules array
-    // but we also need to know which have already been installed
-    // so also do a call to get the active modules from duckdb
 
-    // if it's a heart, turn a module on
-    // which is a duckdb call
-    // and a message saying we just turned a module on
+    const roomId = event.room_id;
+    const emoji = event.content?.["m.relates_to"]?.key;
+    const { context } = event.prevEvent.content;
 
-    // if it's a prayer, turn a module off
-    // also a duckdb call
-    // and a message saying module is off
+    if (!emoji)
+        return;
+
+    const moduleActivations = await getActiveModulesForRoomId(roomId);
+
+    if (emoji.includes("⚙️")) {
+        await sendMessage(roomId, "Here are the available tools for this room. Use the ❤️ react to add a tool and the 🙏 react to remove a tool.", {
+            moduleEvent: false,
+            wrapperEvent: true
+        })
+
+        modules.forEach(module => {
+            const moduleActive = moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id);
+            const moduleMessage = `${module.emoji} ${module.title} - ${module.description} ${moduleActive ? "- Added" : ""}`;
+
+            sendMessage(roomId, moduleMessage, {
+                moduleEvent: false,
+                wrapperEvent: true,
+                moduleId: module.id
+            })
+        })
+        return;
+    }
+
+    const module = modules.find(possibleModule => possibleModule.id === context.moduleId);
+    if (!module) {
+        sendMessage(roomId, "Sorry, this message has no interactive component.", {
+            moduleEvent: false,
+            wrapperEvent: true,
+        })
+        return;
+    }
+
+    if (emoji.includes("❤️")) {
+        const moduleActive = moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id);
+
+        if (!moduleActive) {
+            await insertActiveModule(module.id, roomId, event.sender);
+            sendMessage(roomId, `Turning on ${module.title}. Send ${module.wake_word} to start`, {
+                moduleEvent: false,
+                wrapperEvent: true,
+            });
+        } else {
+            sendMessage(roomId, `${module.title} is already active. Send ${module.wake_word} to start`, {
+                moduleEvent: false,
+                wrapperEvent: true,
+            });
+        }
+        return;
+    }
+
+    if (emoji.includes("🙏")) {
+        const moduleActive = moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id);
+
+        if (moduleActive) {
+            await updateModuleActivation(moduleActive.module_id, moduleActive.room_id, false);
+            sendMessage(roomId, `${module.title} has been deactivated.`, {
+                moduleEvent: false,
+                wrapperEvent: true,
+            });
+        }
+        else {
+            sendMessage(roomId, `${module.title} has already been deactivated.`, {
+                moduleEvent: false,
+                wrapperEvent: true,
+            });
+        }
+        return;
+    }
 }
 
 async function handleModuleEvent(event: MatrixEvent) {
-    const activeModuleIds = await getActiveModulesForRoomId(event.room_id);
+    const moduleActivations = await getActiveModulesForRoomId(event.room_id);
 
     modules
-        .filter(module => activeModuleIds.includes(module.id))
+        .filter(module => moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id))
         .forEach(async (module) => {
             if (module.event_types.includes(event.type)) {
-                console.log(event)
                 const forwardResponse = await forwardEvent(module, event);
                 const forwardResult: any = await forwardResponse.json();
-                console.log(forwardResult);
                 if (forwardResult.response) {
                     if (forwardResult.response.message) {
                         sendMessage(event.room_id, forwardResult.response.message, {
@@ -88,7 +148,7 @@ async function sync(batch = null) {
     if (result.rooms && result.rooms.invite) {
         for (const roomId in result.rooms.invite) {
             joinRoom(roomId);
-            sendMessage(roomId, "Hi, I'm the chathackers bot. I can add modules to this chat. Gear react (⚙️) to this message to add or remove modules.", {
+            sendMessage(roomId, "Hi, I'm the chathackers bot. I can add tools to this chat. Gear react (⚙️) to this message see what tools you have added, and to add or remove tools.", {
                 moduleEvent: false,
                 wrapperEvent: true
             })
@@ -101,15 +161,32 @@ async function sync(batch = null) {
             const timeline: MatrixEvent[] = room.timeline.events;
             timeline.forEach(async event => {
                 if (!handledEventIds.includes(event.event_id) && event.origin_server_ts > scriptStart && event.sender !== userId) {
+                    if (event.content && event.content.body && event.content.body.includes("!wa accept")) {
+                        const replyEvent = {
+                            body: "!wa accept",
+                            "m.mentions": { user_ids: [event.sender] },
+                            user_ids: [event.sender],
+                            "m.relates_to": {
+                                "m.in_reply_to": { event_id: event.event_id }
+                            },
+                            "m.in_reply_to": { event_id: event.event_id },
+                            msgtype: "m.text"
+                        }
+                        sendEvent(roomId, replyEvent, "m.room.message")
+                        return;
+                    }
+
                     event.room_id = roomId;
-                    console.log("handling event", event)
                     if (event.content["m.relates_to"]) {
                         const prevEventId = event.content["m.relates_to"].event_id || event.content["m.relates_to"]["m.in_reply_to"].event_id;
                         const prevEvent = await getEvent(roomId, prevEventId);
                         event.prevEvent = prevEvent;
                     }
 
-                    if (event.prevEvent && event.prevEvent.content.context.wrapperEvent)
+                    if (event.prevEvent &&
+                        event.prevEvent.content.context &&
+                        event.prevEvent.content.context.wrapperEvent &&
+                        event.prevEvent.sender === userId)
                         handleWrapperEvent(event);
                     else
                         handleModuleEvent(event);
