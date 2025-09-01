@@ -6,6 +6,7 @@ export type MatrixEvent = {
     origin_server_ts: number;
     room_id: string;
     prevEvent?: any;
+    state_key?: string;
 };
 
 export type ChatModule = {
@@ -16,4 +17,18 @@ export type ChatModule = {
     title: string;
     description: string;
     event_types: string[];
+}
+
+export type Tool = ChatModule & {
+    active: boolean;
+}
+
+export type Room = {
+    title: string;
+    id: string;
+    timeline: MatrixEvent[]
+}
+
+export type RoomResult = {
+    chunk: MatrixEvent[];
 }

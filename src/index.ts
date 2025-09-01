@@ -1,9 +1,10 @@
 import "dotenv/config";
 import * as fs from "fs";
 import * as path from "path";
-import { getEvent, getSync, joinRoom, sendMessage, sendEvent } from "./matrixClientRequests";
-import { MatrixEvent, ChatModule } from "./types";
+import { getEvent, getSync, joinRoom, sendMessage, sendEvent, getRoomEvents } from "./matrixClientRequests";
+import { MatrixEvent, ChatModule, RoomResult } from "../types";
 import { startDuckDB, getActiveModulesForRoomId, insertActiveModule, updateModuleActivation } from "./duckdb";
+import express from "express";
 
 const { userId } = process.env;
 
@@ -19,6 +20,43 @@ async function forwardEvent(module, event) {
             "Content-type": "application/json"
         }
     })
+}
+
+async function activateModule(roomId, module, sender) {
+    const moduleActivations = await getActiveModulesForRoomId(roomId);
+    const moduleActive = moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id);
+
+    if (!moduleActive) {
+        await insertActiveModule(module.id, roomId, sender);
+        sendMessage(roomId, `Turning on ${module.title}. Send ${module.wake_word} to start`, {
+            moduleEvent: false,
+            wrapperEvent: true,
+        });
+    } else {
+        sendMessage(roomId, `${module.title} is already active. Send ${module.wake_word} to start`, {
+            moduleEvent: false,
+            wrapperEvent: true,
+        });
+    }
+}
+
+async function deactivateModule(roomId, module) {
+    const moduleActivations = await getActiveModulesForRoomId(roomId);
+    const moduleActive = moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id);
+
+    if (moduleActive) {
+        await updateModuleActivation(moduleActive.module_id, moduleActive.room_id, false);
+        sendMessage(roomId, `${module.title} has been deactivated.`, {
+            moduleEvent: false,
+            wrapperEvent: true,
+        });
+    }
+    else {
+        sendMessage(roomId, `${module.title} has already been deactivated.`, {
+            moduleEvent: false,
+            wrapperEvent: true,
+        });
+    }
 }
 
 async function handleWrapperEvent(event: MatrixEvent) {
@@ -62,39 +100,12 @@ async function handleWrapperEvent(event: MatrixEvent) {
     }
 
     if (emoji.includes("❤️")) {
-        const moduleActive = moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id);
-
-        if (!moduleActive) {
-            await insertActiveModule(module.id, roomId, event.sender);
-            sendMessage(roomId, `Turning on ${module.title}. Send ${module.wake_word} to start`, {
-                moduleEvent: false,
-                wrapperEvent: true,
-            });
-        } else {
-            sendMessage(roomId, `${module.title} is already active. Send ${module.wake_word} to start`, {
-                moduleEvent: false,
-                wrapperEvent: true,
-            });
-        }
+        await activateModule(roomId, module, event.sender);
         return;
     }
 
     if (emoji.includes("🙏")) {
-        const moduleActive = moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id);
-
-        if (moduleActive) {
-            await updateModuleActivation(moduleActive.module_id, moduleActive.room_id, false);
-            sendMessage(roomId, `${module.title} has been deactivated.`, {
-                moduleEvent: false,
-                wrapperEvent: true,
-            });
-        }
-        else {
-            sendMessage(roomId, `${module.title} has already been deactivated.`, {
-                moduleEvent: false,
-                wrapperEvent: true,
-            });
-        }
+        await deactivateModule(roomId, module);
         return;
     }
 }
@@ -106,24 +117,27 @@ async function handleModuleEvent(event: MatrixEvent) {
         .filter(module => moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id))
         .forEach(async (module) => {
             if (module.event_types.includes(event.type)) {
+                console.log(event)
                 const forwardResponse = await forwardEvent(module, event);
-                const forwardResult: any = await forwardResponse.json();
-                if (forwardResult.response) {
-                    if (forwardResult.response.message) {
-                        sendMessage(event.room_id, forwardResult.response.message, {
-                            moduleEvent: true,
-                            wrapperEvent: false,
-                            ...forwardResult.response.context
-                        });
-                    }
-                    else {
-                        forwardResult.response.forEach(response => {
-                            sendMessage(event.room_id, response.message, {
+                if (forwardResponse) {
+                    const forwardResult: any = await forwardResponse.json();
+                    if (forwardResult.response) {
+                        if (forwardResult.response.message) {
+                            sendMessage(event.room_id, forwardResult.response.message, {
                                 moduleEvent: true,
                                 wrapperEvent: false,
-                                ...response.context
+                                ...forwardResult.response.context
+                            });
+                        }
+                        else {
+                            forwardResult.response.forEach(response => {
+                                sendMessage(event.room_id, response.message, {
+                                    moduleEvent: true,
+                                    wrapperEvent: false,
+                                    ...response.context
+                                })
                             })
-                        })
+                        }
                     }
                 }
             }
@@ -200,12 +214,80 @@ async function sync(batch = null) {
     sync(result.next_batch);
 }
 
+async function startWebServer() {
+    const app = express();
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
+    const routes = [
+        "/",
+        "/chat",
+        "/tools",
+        "/tools/*toolId",
+        "/faq",
+        "/legal",
+        "/volunteer"
+    ]
+    routes.forEach(route => {
+        app.use(route, express.static("web/dist"));
+    })
+
+    app.get("/api/tools", async (req, res) => {
+        const { roomId } = req.query;
+
+        const moduleActivations = await getActiveModulesForRoomId(roomId as string);
+        const activeModules = moduleActivations.map(module => module.module_id);
+        const tools = modules.map(module => ({ ...module, active: activeModules.includes(module.id) }))
+
+        res.send(tools);
+    })
+
+    app.get("/api/room", async (req, res) => {
+        const { roomId } = req.query;
+
+        const roomResponse = await getRoomEvents(roomId as string);
+        const roomResult = await roomResponse.json() as RoomResult;
+
+        const namingEvent = roomResult.chunk.find(event => event.type === "m.room.name");
+
+        const room = {
+            timeline: roomResult.chunk,
+            id: roomId,
+            title: namingEvent.content.name
+        }
+
+        res.send(room);
+    })
+
+    app.post("/api/tools", async (req, res) => {
+        const { roomId } = req.query;
+        const { toolId, activation } = req.body;
+
+        const module = modules.find(module => module.id === toolId);
+
+        if (activation) {
+            await activateModule(roomId, module, "dashboard.user");
+        }
+        else {
+            await deactivateModule(roomId, module);
+        }
+
+        res.send({ success: true });
+    })
+
+    app.listen(8135);
+}
+
 const start = async () => {
     await startDuckDB()
+
     // load modules
     await loadModules();
+
     // start listening for events
     sync();
+
+    //start web server
+    startWebServer();
 };
 
 start().catch((err) => {
