@@ -90,6 +90,14 @@ async function handleWrapperEvent(event: MatrixEvent) {
         return;
     }
 
+    if (emoji.includes("👀")) {
+        await sendMessage(roomId, `Your dashboard can be found at ${dashboard_url}/chat?roomId=${roomId}`, {
+            moduleEvent: false,
+            wrapperEvent: true,
+        })
+        return;
+    }
+
     const module = modules.find(possibleModule => possibleModule.id === context.moduleId);
     if (!module) {
         sendMessage(roomId, "Sorry, this message has no interactive component.", {
@@ -106,14 +114,6 @@ async function handleWrapperEvent(event: MatrixEvent) {
 
     if (emoji.includes("🙏")) {
         await deactivateModule(roomId, module);
-        return;
-    }
-
-    if (emoji.includes("👀")) {
-        await sendMessage(roomId, `Your dashboard can be found at ${dashboard_url}/chat?roomId=${roomId}`, {
-            moduleEvent: false,
-            wrapperEvent: true,
-        })
         return;
     }
 }
