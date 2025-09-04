@@ -170,7 +170,7 @@ async function sync(batch = null) {
     if (result.rooms && result.rooms.invite) {
         for (const roomId in result.rooms.invite) {
             joinRoom(roomId);
-            sendMessage(roomId, "Hi, I'm the chathackers bot. I can add tools to this chat. Gear react (⚙️) to this message see what tools you have added, and to add or remove tools.", {
+            sendMessage(roomId, "Hi, I'm the chathackers bot. I can add tools to this chat. Gear react (⚙️) to this message see what tools you have added, and to add or remove tools. You can also react with eyes (👀) to get a dashboard link.", {
                 moduleEvent: false,
                 wrapperEvent: true
             })
