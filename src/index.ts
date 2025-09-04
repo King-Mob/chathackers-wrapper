@@ -6,7 +6,7 @@ import { MatrixEvent, ChatModule, RoomResult } from "../types";
 import { startDuckDB, getActiveModulesForRoomId, insertActiveModule, updateModuleActivation } from "./duckdb";
 import express from "express";
 
-const { userId } = process.env;
+const { userId, dashboard_url } = process.env;
 
 const scriptStart = Date.now();
 const handledEventIds: string[] = [];
@@ -106,6 +106,14 @@ async function handleWrapperEvent(event: MatrixEvent) {
 
     if (emoji.includes("🙏")) {
         await deactivateModule(roomId, module);
+        return;
+    }
+
+    if (emoji.includes("👀")) {
+        await sendMessage(roomId, `Your dashboard can be found at ${dashboard_url}/chat?roomId=${roomId}`, {
+            moduleEvent: false,
+            wrapperEvent: true,
+        })
         return;
     }
 }
