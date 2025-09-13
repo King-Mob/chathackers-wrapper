@@ -5,6 +5,7 @@ import { getEvent, getSync, joinRoom, sendMessage, sendEvent, getRoomEvents } fr
 import { MatrixEvent, ChatModule, RoomResult } from "../types";
 import { startDuckDB, getActiveModulesForRoomId, insertActiveModule, updateModuleActivation } from "./duckdb";
 import express from "express";
+import proxy from "express-http-proxy";
 
 const { userId, dashboard_url } = process.env;
 
@@ -237,6 +238,12 @@ async function startWebServer() {
     ]
     routes.forEach(route => {
         app.use(route, express.static("web/dist"));
+    })
+
+    modules.forEach(module => {
+        app.use(`/${module.id}`, proxy(module.url, {
+            proxyReqPathResolver: req => req.url
+        }));
     })
 
     app.get("/api/tools", async (req, res) => {
