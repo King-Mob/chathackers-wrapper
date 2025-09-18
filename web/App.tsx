@@ -11,8 +11,10 @@ import Volunteer from "./Volunteer";
 export default function App() {
   return (
     <BrowserRouter>
-      <Link to="/">
-        <h1 id="title">Chat Hackers</h1>
+      <Link to="/" id="title-link">
+        <h1 id="title" className="dashed-border">
+          Chat Hackers
+        </h1>
       </Link>
       <Routes>
         <Route path="" element={<Home />} />
@@ -24,6 +26,11 @@ export default function App() {
         <Route path="legal" element={<Legal />} />
         <Route path="volunteer" element={<Volunteer />} />
       </Routes>
+      <p id="footer">
+        Chat Hackers is a collaboration of{" "}
+        <Link to="https://campaignlab.uk">Campaign Lab</Link> and{" "}
+        <Link to="https://john.spacetu.be">John Evans</Link>
+      </p>
     </BrowserRouter>
   );
 }
