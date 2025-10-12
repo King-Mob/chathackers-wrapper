@@ -60,6 +60,29 @@ async function deactivateModule(roomId, module) {
     }
 }
 
+async function sendWrapperOpener(event) {
+    const roomId = event.room_id;
+
+    const moduleActivations = await getActiveModulesForRoomId(roomId);
+
+    await sendMessage(roomId, "Here are the available tools for this room. Use the ❤️ react to add a tool and the 🙏 react to remove a tool.", {
+        moduleEvent: false,
+        wrapperEvent: true
+    })
+
+    modules.forEach(module => {
+        const moduleActive = moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id);
+        const moduleMessage = `${module.emoji} ${module.title} - ${module.description} ${moduleActive ? "- Added" : ""}`;
+
+        sendMessage(roomId, moduleMessage, {
+            moduleEvent: false,
+            wrapperEvent: true,
+            moduleId: module.id
+        })
+    })
+    return;
+}
+
 async function handleWrapperEvent(event: MatrixEvent) {
     console.log("wrapper event", event)
 
@@ -70,24 +93,8 @@ async function handleWrapperEvent(event: MatrixEvent) {
     if (!emoji)
         return;
 
-    const moduleActivations = await getActiveModulesForRoomId(roomId);
-
     if (emoji.includes("⚙️")) {
-        await sendMessage(roomId, "Here are the available tools for this room. Use the ❤️ react to add a tool and the 🙏 react to remove a tool.", {
-            moduleEvent: false,
-            wrapperEvent: true
-        })
-
-        modules.forEach(module => {
-            const moduleActive = moduleActivations.find(moduleActivation => moduleActivation.module_id === module.id);
-            const moduleMessage = `${module.emoji} ${module.title} - ${module.description} ${moduleActive ? "- Added" : ""}`;
-
-            sendMessage(roomId, moduleMessage, {
-                moduleEvent: false,
-                wrapperEvent: true,
-                moduleId: module.id
-            })
-        })
+        await sendWrapperOpener(event);
         return;
     }
 
@@ -171,7 +178,7 @@ async function sync(batch = null) {
     if (result.rooms && result.rooms.invite) {
         for (const roomId in result.rooms.invite) {
             joinRoom(roomId);
-            sendMessage(roomId, "Hi, I'm the chathackers bot. I can add tools to this chat. Gear react (⚙️) to this message see what tools you have added, and to add or remove tools. You can also react with eyes (👀) to get a dashboard link.", {
+            sendMessage(roomId, "Hi, I'm the chathackers bot. I can add tools to this chat. Send a Gear emoji (⚙️) or react with one to this message to see what tools you have added, and to add or remove tools. You can also react with eyes (👀) to get a dashboard link.", {
                 moduleEvent: false,
                 wrapperEvent: true
             })
@@ -205,6 +212,9 @@ async function sync(batch = null) {
                         const prevEvent = await getEvent(roomId, prevEventId);
                         event.prevEvent = prevEvent;
                     }
+
+                    if (event.content.body.includes("⚙️"))
+                        sendWrapperOpener(event);
 
                     if (event.prevEvent &&
                         event.prevEvent.content.context &&
