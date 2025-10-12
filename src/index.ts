@@ -213,7 +213,7 @@ async function sync(batch = null) {
                         event.prevEvent = prevEvent;
                     }
 
-                    if (event.content.body.includes("⚙️"))
+                    if (event.type === "m.room.message" && event.content.body.includes("⚙️"))
                         sendWrapperOpener(event);
 
                     if (event.prevEvent &&
