@@ -14,13 +14,19 @@ const handledEventIds: string[] = [];
 const modules: ChatModule[] = [];
 
 async function forwardEvent(module, event) {
-    return fetch(module.url, {
+    const response = await fetch(module.url, {
         method: "POST",
         body: JSON.stringify({ event, botUserId: userId }),
         headers: {
             "Content-type": "application/json"
         }
-    })
+    }).catch(err => console.log(err));
+
+    if (response) {
+        const result = await response.json();
+        return result;
+    } else
+        return { success: false, message: "network error" }
 }
 
 async function activateModule(roomId, module, sender) {
@@ -134,30 +140,28 @@ async function handleModuleEvent(event: MatrixEvent) {
         .forEach(async (module) => {
             if (module.event_types.includes(event.type)) {
                 console.log(event)
-                const forwardResponse = await forwardEvent(module, event);
-                if (forwardResponse) {
-                    const forwardResult: any = await forwardResponse.json();
-                    if (forwardResult.response) {
-                        if (forwardResult.response.message) {
-                            sendMessage(event.room_id, forwardResult.response.message, {
+                const forwardResult: any = await forwardEvent(module, event);
+                if (forwardResult.response) {
+                    if (forwardResult.response.message) {
+                        sendMessage(event.room_id, forwardResult.response.message, {
+                            moduleEvent: true,
+                            wrapperEvent: false,
+                            ...forwardResult.response.context
+                        });
+                    }
+                    else {
+                        forwardResult.response.forEach(response => {
+                            sendMessage(event.room_id, response.message, {
                                 moduleEvent: true,
                                 wrapperEvent: false,
-                                ...forwardResult.response.context
-                            });
-                        }
-                        else {
-                            forwardResult.response.forEach(response => {
-                                sendMessage(event.room_id, response.message, {
-                                    moduleEvent: true,
-                                    wrapperEvent: false,
-                                    ...response.context
-                                })
+                                ...response.context
                             })
-                        }
+                        })
                     }
                 }
             }
-        })
+        }
+        )
 }
 
 async function loadModules() {
@@ -297,6 +301,31 @@ async function startWebServer() {
         }
 
         res.send({ success: true });
+    })
+
+    app.post("/api/send", async (req, res) => {
+        const { roomId, toolId, secret } = req.query;
+        const { message } = req.body;
+
+        const module = modules.find(module => module.id === toolId);
+
+        if (!module) {
+            res.send({ success: false, message: "no module found with id" });
+        }
+
+        if (!module.secret || module.secret !== secret) {
+            res.send({ success: false, message: "secret does not match registered secret" });
+        }
+
+        const activeModules = await getActiveModulesForRoomId(roomId as string);
+
+        if (activeModules.find(activeModule => activeModule.module_id === module.id)) {
+            sendMessage(roomId as string, message);
+            res.send({ success: true });
+        }
+        else {
+            res.send({ success: false, message: "module is not active in this room" })
+        }
     })
 
     app.listen(8138);

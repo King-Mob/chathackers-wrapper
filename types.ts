@@ -17,6 +17,7 @@ export type ChatModule = {
     title: string;
     description: string;
     event_types: string[];
+    secret?: string;
 }
 
 export type Tool = ChatModule & {

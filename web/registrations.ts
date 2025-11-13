@@ -1,5 +1,6 @@
 import example from "../registrations/example.json";
 import welcome from "../registrations/welcome.json";
+import rainbow from "../registrations/rainbow.json";
 import { type ChatModule } from "../types";
 
 const registrations: ChatModule[] = [
