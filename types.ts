@@ -7,6 +7,7 @@ export type MatrixEvent = {
     room_id: string;
     prevEvent?: any;
     state_key?: string;
+    displayname?: string;
 };
 
 export type ChatModule = {
@@ -32,4 +33,9 @@ export type Room = {
 
 export type RoomResult = {
     chunk: MatrixEvent[];
+}
+
+export type Profile = {
+    displayname: string;
+    avatar_url: string;
 }

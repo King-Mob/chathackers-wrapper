@@ -2,7 +2,7 @@ import "dotenv/config";
 import * as fs from "fs";
 import * as path from "path";
 import { getEvent, getSync, joinRoom, sendMessage, sendEvent, getRoomEvents, getProfile } from "./matrixClientRequests";
-import { MatrixEvent, ChatModule, RoomResult } from "../types";
+import { MatrixEvent, ChatModule, RoomResult, Profile } from "../types";
 import { startDuckDB, getActiveModulesForRoomId, insertActiveModule, updateModuleActivation } from "./duckdb";
 import express from "express";
 import proxy from "express-http-proxy";
@@ -217,8 +217,8 @@ async function sync(batch = null) {
                         event.prevEvent = prevEvent;
                     }
 
-                    const profile = await getProfile(event.sender)
-                    console.log(profile)
+                    const profile = await getProfile(event.sender) as Profile;
+                    event.displayname = profile.displayname;
 
                     if (event.type === "m.room.message" && event.content.body.includes("⚙️"))
                         sendWrapperOpener(event);
