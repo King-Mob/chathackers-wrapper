@@ -120,3 +120,11 @@ export async function findDirectMessageRoom(userId: string): Promise<string | nu
     return null;
   }
 }*/
+
+export const getProfile = async (userId: string) => {
+  return fetch(`${homeserver}/_matrix/client/v3/profile/${userId}`, {
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+    },
+  });
+};
