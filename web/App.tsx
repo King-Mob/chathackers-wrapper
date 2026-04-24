@@ -22,7 +22,7 @@ export default function App() {
     loadRegistrations();
   }, []);
 
-  return (
+  /*return (
     <BrowserRouter>
       <Link to="/" id="title-link">
         <h1 id="title" className="dashed-border">
@@ -45,5 +45,6 @@ export default function App() {
         <Link to="https://john.spacetu.be">John Evans</Link>
       </p>
     </BrowserRouter>
-  );
+  );*/
+  return <Home />;
 }

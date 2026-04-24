@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 
 export default function Home() {
-  return (
+  /* return (
     <div>
       <p>
         To determine how we communicate is a foundational democratic right.
@@ -24,6 +24,12 @@ export default function Home() {
       <Link to="volunteer">
         <p>Volunteer</p>
       </Link>
+    </div>
+  );*/
+
+  return (
+    <div id="phone">
+      <div className="message">Hey! Welcome to chat hackers</div>
     </div>
   );
 }

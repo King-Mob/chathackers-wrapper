@@ -15,10 +15,11 @@ body {
 
 #root {
   width: 100%;
-  max-width: 800px;
+  background-color: aquamarine;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
+  align-items: center;
 }
 
 iframe {
@@ -92,4 +93,24 @@ a {
 #footer {
   border-top: 1px dotted black;
   padding-top: 10px;
+}
+
+#phone {
+  background-color: bisque;
+  border: solid 7px black;
+  border-top: 25px solid black;
+  border-bottom: 40px solid black;
+  border-radius: 25px;
+  height: 100%;
+  width: 100%;
+  max-width: 400px;
+  max-height: 800px;
+}
+
+.message {
+  background: lightgrey;
+  width: fit-content;
+  padding: 5px;
+  margin: 5px;
+  border-radius: 6px;
 }
