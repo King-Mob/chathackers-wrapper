@@ -1,14 +1,27 @@
 import "./App.css";
+import { useState, useEffect } from "react";
+import { type ChatModule } from "../types";
 import { BrowserRouter, Routes, Route, Link } from "react-router";
 import Home from "./Home";
 import Chat from "./Chat";
 import Tools from "./Tools";
-import registrations from "./registrations";
 import FAQ from "./FAQ";
 import Legal from "./Legal";
 import Volunteer from "./Volunteer";
+import { getRegistrations } from "./requests";
 
 export default function App() {
+  const [registrations, setRegistrations] = useState<ChatModule[]>([]);
+
+  async function loadRegistrations() {
+    const registrations = await getRegistrations();
+    setRegistrations(registrations);
+  }
+
+  useEffect(() => {
+    loadRegistrations();
+  }, []);
+
   return (
     <BrowserRouter>
       <Link to="/" id="title-link">

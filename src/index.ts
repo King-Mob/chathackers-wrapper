@@ -263,6 +263,10 @@ async function startWebServer() {
         }));
     })
 
+    app.get("/api/registrations", async (req, res) => {
+        res.send(modules);
+    })
+
     app.get("/api/tools", async (req, res) => {
         const { roomId } = req.query;
 
