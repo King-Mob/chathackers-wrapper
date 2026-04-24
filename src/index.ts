@@ -264,7 +264,17 @@ async function startWebServer() {
     })
 
     app.get("/api/registrations", async (req, res) => {
-        res.send(modules);
+        const safeModuleList = modules.map(module => ({
+            id: module.id,
+            url: module.url,
+            emoji: module.emoji,
+            wake_word: module.wake_word,
+            title: module.title,
+            description: module.description,
+            event_types: module.event_types
+        }));
+
+        res.send(safeModuleList);
     })
 
     app.get("/api/tools", async (req, res) => {
