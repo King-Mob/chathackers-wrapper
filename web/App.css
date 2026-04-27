@@ -105,12 +105,44 @@ a {
   width: 100%;
   max-width: 400px;
   max-height: 800px;
+  display: flex;
+  flex-direction: column;
 }
 
 .message {
-  background: lightgrey;
   width: fit-content;
   padding: 5px;
   margin: 5px;
   border-radius: 6px;
+}
+
+.left {
+  align-self: start;
+  background: lightgrey;
+}
+
+.right {
+  align-self: end;
+  background: rgb(176, 167, 255);
+}
+
+#message-options {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.option-container {
+  border: none;
+  background: none;
+}
+
+.option {
+  width: fit-content;
+  padding: 5px;
+  margin: 5px;
+  border-radius: 6px;
+  background: lightgrey;
+  cursor: pointer;
 }
