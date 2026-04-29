@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router";
 import Header from "./Header";
 
@@ -115,18 +115,26 @@ export default function Home() {
   >([
     { text: "hello, nice to meet you, this is chat hackers HQ", side: "left" },
   ]);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView();
+  }, [messages]);
 
   return (
     <>
       <Header name="Chat Hackers HQ" colour="red" />
-      {messages.map((message) => (
-        <Message
-          text={message.text}
-          side={message.side}
-          link={message.link}
-          linkText={message.linkText}
-        />
-      ))}
+      <div id="message-container">
+        {messages.map((message) => (
+          <Message
+            text={message.text}
+            side={message.side}
+            link={message.link}
+            linkText={message.linkText}
+          />
+        ))}
+        <div ref={bottomRef} />
+      </div>
       <div id="message-options">
         {options
           .filter((option) => !usedOptions.includes(option.question))
