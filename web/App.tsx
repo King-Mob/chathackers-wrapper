@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { type ChatModule } from "../types";
 import { BrowserRouter, Routes, Route, Link } from "react-router";
 import Home from "./Home";
+import Contacts from "./Contacts";
 import Chat from "./Chat";
 import Tools from "./Tools";
 import FAQ from "./FAQ";
-import Legal from "./Legal";
+import Privacy from "./Privacy";
 import Volunteer from "./Volunteer";
 import { getRegistrations } from "./requests";
 
@@ -24,21 +25,22 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <div id="phone">
+        <Routes>
+          <Route path="" element={<Home />} />
+          <Route path="conversations" element={<Contacts />} />
+          <Route path="faq" element={<FAQ />} />
+          <Route path="privacy" element={<Privacy />} />
+          <Route path="volunteer" element={<Volunteer />} />
+          <Route
+            path="tools"
+            element={<Tools registrations={registrations} />}
+          />
+        </Routes>
+      </div>
       <Routes>
-        <Route path="" element={<Home />} />
         <Route path="chat" element={<Chat />} />
-        <Route path="tools">
-          <Route path="" element={<Tools registrations={registrations} />} />
-        </Route>
-        <Route path="faq" element={<FAQ />} />
-        <Route path="legal" element={<Legal />} />
-        <Route path="volunteer" element={<Volunteer />} />
       </Routes>
-      <p id="footer">
-        Chat Hackers is a collaboration of{" "}
-        <Link to="https://campaignlab.uk">Campaign Lab</Link> and{" "}
-        <Link to="https://john.spacetu.be">John Evans</Link>
-      </p>
     </BrowserRouter>
   );
 }

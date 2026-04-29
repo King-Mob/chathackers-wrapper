@@ -6,7 +6,7 @@
         "skipLibCheck": true,
         "esModuleInterop": true,
         "module": "CommonJS",
-        "moduleResolution": "Node",
+        "moduleResolution": "bundler",
         "lib": ["es2021"],
         "jsx": "react-jsx",
         "resolveJsonModule": true
