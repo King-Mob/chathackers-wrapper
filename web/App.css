@@ -160,7 +160,7 @@ a {
 #message-container {
   display: flex;
   flex-direction: column;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 .message {
