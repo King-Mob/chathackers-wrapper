@@ -152,6 +152,7 @@ a {
     border: none;
     max-width: none;
     max-height: none;
+    min-height: 100%;
     border-radius: 0px;
   }
 }
