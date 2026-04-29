@@ -15,10 +15,11 @@ body {
 
 #root {
   width: 100%;
-  max-width: 800px;
+  background-color: aquamarine;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
+  align-items: center;
 }
 
 iframe {
@@ -89,7 +90,120 @@ a {
   opacity: 0.5;
 }
 
-#footer {
-  border-top: 1px dotted black;
-  padding-top: 10px;
+.header {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px dotted black;
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+#back-arrow {
+  margin-left: 5px;
+}
+
+#header-button {
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+#profile {
+  position: relative;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.profile-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-left: 20px;
+}
+
+.profile-pic {
+  height: 40px;
+  width: 40px;
+  border-radius: 50%;
+  background-color: green;
+}
+
+.chat-name {
+  margin-left: 5px;
+}
+
+#phone {
+  background-color: bisque;
+  border: solid 7px black;
+  border-top: 25px solid black;
+  border-bottom: 40px solid black;
+  border-radius: 25px;
+  height: 100%;
+  width: 100%;
+  max-width: 400px;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+}
+
+@media screen and (max-width: 500px) {
+  #phone {
+    border: none;
+    max-width: none;
+    max-height: none;
+    border-radius: 0px;
+  }
+}
+
+.message {
+  width: fit-content;
+  padding: 5px;
+  margin: 5px;
+  border-radius: 6px;
+}
+
+.left {
+  align-self: start;
+  background: lightgrey;
+}
+
+.right {
+  align-self: end;
+  background: rgb(176, 167, 255);
+}
+
+#message-options {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.option-container {
+  border: none;
+  background: none;
+}
+
+.option {
+  width: fit-content;
+  padding: 5px;
+  margin: 5px;
+  border-radius: 6px;
+  background: lightgrey;
+  cursor: pointer;
+}
+
+#contact-title {
+  background-color: rgba(255, 255, 255, 0.4);
+  padding: 5px;
+  margin: 0px;
+  border-bottom: 1px dotted black;
+}
+
+.contact {
+  margin-left: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
