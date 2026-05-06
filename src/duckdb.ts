@@ -1,11 +1,12 @@
 import { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
 
 let connection: DuckDBConnection;
+let instance: DuckDBInstance;
 
 export async function startDuckDB() {
     const chatHackersDuckDBFileName = "chathackers_duckdb.db";
 
-    const instance = await DuckDBInstance.create(chatHackersDuckDBFileName);
+    instance = await DuckDBInstance.create(chatHackersDuckDBFileName);
     connection = await instance.connect();
 
     const tables = [
@@ -49,11 +50,13 @@ export async function updateModuleActivation(moduleId, roomId, active) {
 }
 
 process.on("SIGINT", () => {
-    connection.closeSync();
+    connection.closeSync();       // disconnect the connection
+    instance.closeSync();   // release the file lock
     process.exit(0);
 });
 
 process.on("SIGTERM", () => {
     connection.closeSync();
+    instance.closeSync();
     process.exit(0);
 });
