@@ -5,7 +5,9 @@ export default function FAQ() {
   return (
     <div>
       <Header name="FAQ" colour="blue" />
-      <Message side="left" text="FAQ coming soon" />
+      <div id="message-container">
+        <Message side="left" text="FAQ coming soon" />
+      </div>
     </div>
   );
 }
