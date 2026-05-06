@@ -10,6 +10,7 @@ import FAQ from "./FAQ";
 import Privacy from "./Privacy";
 import Volunteer from "./Volunteer";
 import { getRegistrations } from "./requests";
+import Motivations from "./Motivations";
 
 export default function App() {
   const [registrations, setRegistrations] = useState<ChatModule[]>([]);
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="faq" element={<FAQ />} />
           <Route path="privacy" element={<Privacy />} />
           <Route path="volunteer" element={<Volunteer />} />
+          <Route path="motivations" element={<Motivations />} />
           <Route
             path="tools"
             element={<Tools registrations={registrations} />}

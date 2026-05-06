@@ -94,7 +94,9 @@ const options: Option[] = [
     question: "Why have you made this?",
     reply: [
       {
-        text: "The group chat has become the first tool that people pick up when it's time to organise for political action. We want to make it easy to customise your chat to meet the needs of democratic groups",
+        text: "The group chat has become the first tool that people pick up when it's time to organise for political action. We want to make it easy to customise your chat to meet the needs of democratic groups. For more you can read ",
+        link: "motivations",
+        linkText: "our motivations",
       },
     ],
   },

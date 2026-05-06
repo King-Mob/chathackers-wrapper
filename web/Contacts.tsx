@@ -25,6 +25,7 @@ export default function Contacts() {
     { to: "/faq", name: "FAQ", colour: "blue" },
     { to: "/privacy", name: "Privacy Policy", colour: "green" },
     { to: "/volunteer", name: "Volunteer", colour: "yellow" },
+    { to: "/motivations", name: "Motivations", colour: "black" },
   ];
 
   return (
