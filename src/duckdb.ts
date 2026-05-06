@@ -47,3 +47,13 @@ export async function updateModuleActivation(moduleId, roomId, active) {
     const updateModuleActivation = `UPDATE ModuleActivations SET active=${active ? 'TRUE' : 'FALSE'} WHERE module_id='${moduleId}' AND room_id='${roomId}';`;
     await connection.run(updateModuleActivation);
 }
+
+process.on("SIGINT", () => {
+    connection.closeSync();
+    process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+    connection.closeSync();
+    process.exit(0);
+});
